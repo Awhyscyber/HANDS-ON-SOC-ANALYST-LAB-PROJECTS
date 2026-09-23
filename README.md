@@ -1,2 +1,2 @@
 # HANDS-ON-SOC-ANALYST-LAB-PROJECTS
-A collection of hands on SOC projects documenting my journey in security monitoring, threat detection, log analysis, investigation and incident response.
+A hands-on SOC Analyst portfolio documenting my practical cybersecurity learning journey through real-world security monitoring, threat detection, log analysis, alert investigation, and incident response scenarios. This repository contains projects built in a controlled home lab using tools such as Splunk, Wireshark/TShark, Suricata, Windows Server, Ubuntu Server, and Kali Linux, with each project documenting the investigation process, findings, evidence, and key lessons learned.
