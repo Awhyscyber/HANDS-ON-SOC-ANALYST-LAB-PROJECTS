@@ -1,0 +1,290 @@
+
+I built a Windows Active Directory environment from scratch in my home lab to understand how Windows domains work and to get practical experience with domain administration, users, groups, DNS, Group Policy and Windows security.
+
+I also wanted to understand how Active Directory activity can be useful from a SOC Analyst point of view, especially when investigating authentication and security events.
+
+This project was built using virtual machines in VirtualBox.
+
+Project Goals
+
+The main goals of this lab were to:
+	•	Build an Active Directory domain from scratch.
+	•	Configure a Windows Server as a Domain Controller.
+	•	Understand the role of DNS in Active Directory.
+	•	Create and manage domain users and groups.
+	•	Create Organizational Units (OUs).
+	•	Join a Windows client computer to the domain.
+	•	Understand and apply Group Policy.
+	•	Explore Windows security and authentication events.
+	•	Understand how Active Directory can generate useful security information for a SOC Analyst.
+
+Lab Environment
+
+Virtualization
+	•	VirtualBox
+
+Machines
+
+Windows Server
+	•	Used as the Domain Controller.
+	•	Hosted Active Directory Domain Services (AD DS).
+	•	Provided domain authentication and directory services.
+	•	Also handled DNS for the Active Directory environment.
+
+Windows 10 Client
+	•	Used as the domain-joined workstation.
+	•	Used to test user authentication and domain policies.
+
+Active Directory Domain
+
+I created my own test domain for the lab:
+
+[CMDDC.local]
+
+The Windows Server was promoted to a Domain Controller and became the central server responsible for managing the domain.
+
+1. Installing Active Directory Domain Services
+
+I started by installing the Active Directory Domain Services role on Windows Server.
+
+After the role was installed, I used the Server Manager notification to promote the server to a Domain Controller.
+
+During the setup, I created the new Active Directory forest and configured the domain used for the lab.
+
+After the server restarted, I was able to log in using the domain administrator account.
+
+What I learned
+
+I learned that installing the AD DS role is not the same thing as creating the Active Directory environment.
+
+The server first needs the AD DS role, and then it has to be promoted to a Domain Controller so that it can actually provide Active Directory services.
+
+2. Understanding the Domain Controller
+
+The Domain Controller became the central part of my lab.
+
+It is responsible for authenticating domain users and providing access to Active Directory services.
+
+This helped me understand why the Domain Controller is such an important system from a security perspective.
+
+If an attacker gains control of a Domain Controller, the impact can be much larger than compromising a normal workstation because the Domain Controller controls important identity and authentication functions across the domain.
+
+3. Active Directory Users and Groups
+
+I created test users inside Active Directory to simulate employees in a small organization.
+
+I also created groups so that users could be managed according to their role.
+
+Example structure:
+
+Active Directory
+│
+├── IT
+├── SOC
+├── HR
+└── Users
+
+Example test groups:
+
+IT-Admins
+SOC-Analysts
+HR-Users
+
+Users could then be added to the appropriate groups.
+
+What I learned
+
+One important thing I learned was the difference between users and groups.
+
+Instead of giving permissions to every user individually, groups make it easier to manage users according to their role.
+
+This becomes especially important when an organization has many users.
+
+4. Organizational Units
+
+I created Organizational Units to organize users and computers.
+
+For example:
+
+CyberLab
+│
+├── IT
+├── SOC
+├── HR
+└── Workstations
+
+The purpose of the Organization Unit was not just organization.
+
+I also learned that OUs are useful because Group Policies can be applied to specific OUs.
+
+This means different departments or computers can receive different policies depending on how the Active Directory environment is organized.
+
+5. Joining Windows 10 to the Domain
+
+After setting up Active Directory, I connected the Windows 10 virtual machine to the domain.
+
+The Windows 10 machine was successfully joined to the Active Directory domain.
+
+I then tested logging in using a domain account.
+
+Example:
+
+AWHYS
+
+This confirmed that the client was communicating with the Domain Controller and that the Active Directory authentication process was working.
+
+Evidence
+
+I captured screenshots showing:
+	•	The Windows Server Domain Controller.
+	•	The Active Directory domain.
+	•	The Windows 10 machine joined to the domain.
+	•	A domain user logging into the Windows 10 workstation.
+
+6. Group Policy
+
+I also explored Group Policy to understand how an administrator can centrally control Windows computers in a domain.
+
+For this lab, I focused on security-related settings such as:
+	•	Password policies
+	•	Account lockout settings
+	•	Windows security settings
+	•	Firewall-related settings
+	•	Audit policies
+
+The main thing I learned from this was that Group Policy allows administrators to manage security settings centrally instead of configuring every computer manually.
+
+7. Active Directory and Security Monitoring
+
+One of the main reasons I wanted to build this lab was to understand Active Directory from a SOC Analyst perspective.
+
+User authentication generates security events in Windows.
+
+For example:
+
+Event ID 4624
+
+represents a successful logon.
+
+Another important event is:
+
+Event ID 4625
+
+which represents a failed logon attempt.
+
+These events can provide useful information such as:
+	•	Which account was involved.
+	•	When the activity happened.
+	•	Where the authentication attempt came from.
+	•	Whether the login succeeded or failed.
+
+This helped me understand how a SOC Analyst could use Windows event logs to investigate suspicious authentication activity.
+
+8. Authentication Investigation
+
+I tested authentication activity inside my lab and examined the resulting Windows Security events.
+
+For failed authentication attempts, I investigated Event ID 4625.
+
+The investigation questions I focused on were:
+
+Who was the targeted user?
+
+When did the attempt happen?
+
+Was the authentication successful or unsuccessful?
+
+Which computer generated the activity?
+
+Does the activity look normal or suspicious?
+
+This helped me connect the Active Directory lab with the security monitoring concepts I have been learning.
+
+9. Security Perspective
+
+Building the Active Directory environment also helped me understand why identity management is important in cybersecurity.
+
+A SOC Analyst may investigate activity such as:
+	•	Multiple failed login attempts.
+	•	Suspicious successful logins.
+	•	Account lockouts.
+	•	Unexpected use of privileged accounts.
+	•	Authentication from unusual systems.
+
+Active Directory therefore provides an important source of security telemetry that can be investigated during an incident.
+
+10. Challenges I Encountered
+
+This lab was not completely straightforward.
+
+I had some problems while building and configuring the virtual machines, including issues with the Windows Server environment and VirtualBox resources.
+
+Working through these problems helped me become more comfortable with troubleshooting virtual machines, networking and Windows Server configuration.
+
+One of the most useful lessons for me was that troubleshooting is part of building a real lab. Getting the final result working was important, but understanding why something was not working was also part of the learning process.
+
+11. Key Things I Learned
+
+From this project, I learned:
+	•	What Active Directory is and why organizations use it.
+	•	What a Domain Controller does.
+	•	The importance of DNS in an Active Directory environment.
+	•	How users and groups are managed.
+	•	Why Organizational Units are useful.
+	•	How Windows computers join a domain.
+	•	How Group Policy is used for centralized management.
+	•	How authentication activity appears in Windows Security logs.
+	•	The difference between successful and failed logon events.
+	•	Why Active Directory is important from a SOC Analyst perspective.
+
+12. Practical Skills Demonstrated
+
+This lab demonstrates hands-on experience with:
+
+Windows Server
+Active Directory
+Active Directory Domain Services
+Domain Controllers
+DNS
+Users and Groups
+Organizational Units
+Group Policy
+Windows 10 Domain Joining
+Windows Security Event Logs
+Authentication Investigation
+VirtualBox Lab Administration
+
+13. Evidence
+
+Screenshots and supporting evidence are included in this repository to show the different stages of the lab.
+
+Examples include:
+	•	Domain Controller configuration
+	•	Active Directory Users and Computers
+	•	Created users and groups
+	•	Organizational Units
+	•	Group Policy configuration
+	•	Windows 10 domain membership
+	•	Windows Security Event Viewer
+	•	Authentication events
+
+Sensitive information such as real passwords and personal information has not been included.
+
+14. What I Plan to Do Next
+
+The next stage of this project is to expand the lab from basic Active Directory administration into a security monitoring environment.
+
+Planned improvements include:
+	•	More Windows security auditing.
+	•	Controlled attack simulations.
+	•	Investigation of suspicious authentication activity.
+	•	Connecting the environment to a SIEM such as Wazuh.
+	•	Creating SOC-style investigation reports from the events generated by the lab.
+
+Conclusion
+
+Building this Active Directory lab gave me practical experience with Windows domain environments and helped me understand how identity, authentication and centralized security management work together.
+
+More importantly, it helped me connect Windows Active Directory administration with the work of a SOC Analyst, especially monitoring authentication activity and investigating security events.
+
+This project is part of my hands-on cybersecurity learning journey.
