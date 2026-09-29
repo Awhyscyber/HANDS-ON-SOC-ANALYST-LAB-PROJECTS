@@ -1,0 +1,745 @@
+
+Project 4: Network Reconnaissance Detection with Suricata
+
+Project Overview
+
+This project focused on building a small network security monitoring lab to understand how a Security Operations Center (SOC) analyst can detect network reconnaissance activity using an Intrusion Detection System (IDS).
+
+I used Kali Linux to generate controlled network reconnaissance traffic with Nmap and Ubuntu Server as the monitoring system running Suricata.
+
+The objective was to simulate an attacker performing a TCP SYN scan and then observe how Suricata detected and logged the activity.
+
+This project helped me understand the relationship between:
+
+Attacker activity → Network traffic → IDS detection rule → Alert → Log analysis → SOC investigation
+
+Lab Environment
+
+Virtual Machines
+
+Kali Linux
+
+Used as the simulated attacker/reconnaissance machine.
+
+Purpose:
+	*	Generate network reconnaissance traffic.
+	*	Run Nmap.
+	*	Perform TCP SYN scanning against the Ubuntu Server.
+
+Ubuntu Server
+
+Used as the monitoring/IDS machine.
+
+Purpose:
+	*	Run Suricata.
+	*	Monitor network traffic.
+	*	Apply custom detection rules.
+	*	Generate security alerts.
+	*	Store detection events in Suricata’s EVE JSON log.
+
+Network Configuration
+
+The lab used a host-only network so the two virtual machines could communicate directly.
+
+Machine	Role	IP Address
+Kali Linux	Reconnaissance/attacker	192.168.56.109
+Ubuntu Server	IDS/monitoring system	192.168.56.105
+
+Kali was used to generate the reconnaissance activity, while Ubuntu Server monitored the traffic.
+
+The network communication was tested using:
+
+ping 192.168.56.105
+
+This confirmed that Kali could communicate with Ubuntu Server over the lab network.
+
+Tools Used
+
+1. Kali Linux
+
+Kali Linux was used as the simulated attacker machine.
+
+I used it primarily for:
+	*	Nmap reconnaissance
+	*	Network connectivity testing
+	*	Generating TCP SYN scan traffic
+
+2. Ubuntu Server
+
+Ubuntu Server acted as the monitoring/IDS machine.
+
+It hosted:
+	*	Suricata
+	*	Custom Suricata rules
+	*	Suricata log files
+
+3. Suricata
+
+Suricata was the primary IDS used in this project.
+
+I used Suricata to:
+	*	Monitor network traffic.
+	*	Inspect packets.
+	*	Apply detection rules.
+	*	Detect TCP SYN scanning.
+	*	Generate alerts.
+	*	Record security events in eve.json.
+
+4. Nmap
+
+Nmap was used to simulate reconnaissance activity. The scan generated TCP SYN packets against the Ubuntu Server.
+
+Example:
+
+nmap -sS 192.168.56.105
+
+The -sS option performs a TCP SYN scan.
+
+This was useful because TCP SYN scanning is a common technique used during network reconnaissance and can be detected by an IDS.
+
+5. tshark
+
+tshark were part of my existing security analysis toolkit and helped reinforce the concept of inspecting network traffic and understanding what happens at packet level.
+
+They are useful for examining:
+	•	Source IP
+	•	Destination IP
+	•	Protocol
+	•	Ports
+	•	TCP flags
+	•	Packet behavior
+
+Network reconnaissance is the process of gathering information about systems, hosts, ports, and services on a network.
+
+An attacker may perform reconnaissance to determine:
+	*	Which hosts are online.
+	*	Which ports are open.
+	*	Which services are available.
+	*	Which systems may be vulnerable.
+	*	What services could potentially be targeted.
+
+
+From a SOC perspective, reconnaissance can be an important early indicator of possible malicious activity.
+
+Understanding a TCP SYN Scan
+
+A TCP SYN scan is a common Nmap scanning technique.
+
+The basic TCP process normally involves:
+
+Client → SYN
+Server → SYN/ACK
+Client → ACK
+
+This is the normal TCP three-way handshake.
+
+With a SYN scan, the scanner sends a SYN packet and observes the response without completing the full TCP connection.
+
+For example:
+
+Kali
+192.168.56.109
+       |
+       | TCP SYN
+       v
+Ubuntu
+192.168.56.105
+
+The scanner can use the response to determine whether a port appears open, closed, or filtered.
+
+This makes SYN scanning useful for reconnaissance.
+
+Suricata Configuration
+
+One of the important parts of the project was configuring Suricata to monitor the correct network interface.
+
+The monitoring interface was:
+
+enp0s8
+
+The host-only network was:
+
+192.168.56.0/24
+
+Suricata needed to monitor the interface carrying the traffic between Kali and Ubuntu.
+
+This taught me an important practical lesson:
+
+	An IDS cannot detect traffic it is not monitoring.
+
+Correctly identifying the network interface is therefore an important part of IDS deployment.
+
+Suricata Rule
+
+I created a custom Suricata detection rule for TCP SYN scanning.
+
+The rule was:
+
+alert tcp any any -> any any (msg:"TCP SYN Scan Detected"; flags S; sid:1000001;)
+
+Breaking Down the Rule
+
+alert
+
+Tells Suricata to generate an alert when the rule matches.
+
+tcp
+
+The rule applies to TCP traffic.
+
+any any
+
+The source IP and source port can be any value.
+
+->
+
+Represents the direction of the traffic.
+
+any any
+
+The destination IP and destination port can also be any value.
+
+msg:"TCP SYN Scan Detected"
+
+This is the message displayed when the rule triggers.
+
+flags S
+
+This checks for the TCP SYN flag.
+
+The SYN flag is used when initiating TCP communication.
+
+sid:1000001
+
+This is the unique Suricata Signature ID for the custom rule.
+
+Rule Location
+
+The custom rule was stored in:
+
+/etc/suricata/rules/suricata.rules
+
+The Suricata configuration referenced the rules directory:
+
+/etc/suricata/rules
+
+This helped me understand that Suricata depends on correctly configured rule paths and filenames.
+
+Suricata Configuration Troubleshooting
+
+One of the most valuable parts of the project was troubleshooting configuration problems.
+
+I encountered several issues while configuring Suricata.
+
+These included:
+	*	Incorrect network interface configuration.
+	*	Problems with the HOME_NET configuration.
+	*	YAML syntax errors.
+	*	Problems locating the Suricata rules file.
+	*	Rule-file naming/path issues.
+	*	Duplicate signature problems.
+	*	Understanding why Suricata would not load a configuration successfully.
+
+For example, I encountered an error similar to:
+
+failed to parse line 20 expected ':'
+
+This taught me that Suricata’s YAML configuration is sensitive to formatting and syntax.
+
+I also encountered an issue where Suricata could not find the expected rule file:
+
+no rule file match /etc/suricata/rules/suricata.rules
+
+This required checking the rule path and configuration.
+
+Suricata Rule Loading
+
+The project also taught me that creating a rule is not enough. The rule must actually be loaded by the Suricata engine. The configuration referenced the rules directory:
+
+default-rule-path: /etc/suricata/rules and the rule file.
+
+This distinction was important:
+
+Rule created
+     ↓
+Rule correctly located
+     ↓
+Rule referenced by configuration
+     ↓
+Suricata successfully loads rule
+     ↓
+Traffic matches rule
+     ↓
+Alert generated
+
+Starting Suricata
+
+Suricata was configured to run against the monitoring interface. The general Suricata command used in the lab was: sudo suricata -c /etc/suricata/suricata.yaml -i enp0s8
+
+Where: -c specifies the configuration file. And: -i enp0s8 specifies the network interface Suricata should monitor.
+
+Generating Reconnaissance Traffic
+
+Once Suricata was running, I switched to Kali Linux. I generated reconnaissance traffic using Nmap.
+
+Example:
+
+nmap -sS 192.168.56.105
+
+This caused Kali to send TCP SYN packets toward Ubuntu Server.
+
+The traffic path was:
+
+Kali Linux
+192.168.56.109
+      |
+      | TCP SYN scan
+      |
+      v
+Ubuntu Server
+192.168.56.105
+      |
+      v
+Suricata
+      |
+      v
+Detection Rule
+      |
+      v
+Alert
+
+Observing the Detection
+
+After running the Nmap scan, Suricata generated alerts matching the custom rule.
+
+The output included messages such as: TCP scan detected and traffic involving: 192.168.56.109
+
+This confirmed that the traffic generated by Kali was being detected by Suricata on Ubuntu.I observed multiple detection entries because Nmap generated multiple TCP SYN packets during the scan.
+
+Understanding the Detection
+
+The detection demonstrated how a SOC analyst can identify reconnaissance activity.The attacker does not necessarily have to exploit a vulnerability for the activity to become security-relevant.
+
+The sequence can be:
+
+Reconnaissance
+      ↓
+Port scanning
+      ↓
+Detection
+      ↓
+SOC alert
+      ↓
+Investigation
+      ↓
+Determine whether activity is legitimate or suspicious .This is an important SOC concept because detection is not the same as confirmation of compromise.
+
+An alert tells the analyst: “Something matching this detection rule happened. ”The analyst must then investigate the context.
+
+Suricata EVE JSON
+
+Suricata records structured security events in: /var/log/suricata/eve.json
+
+I verified that the file was being generated and contained data.
+
+The file size reached approximately: 67507 bytes during the testing. This demonstrated that Suricata was actively producing event data.
+
+Checking the Suricata Log
+
+The EVE JSON file can be examined with: sudo cat /var/log/suricata/eve.json For easier viewing of continuously generated events: sudo tail -f /var/log/suricata/eve.json
+
+The EVE JSON format is useful because security events can be processed by other security monitoring platforms.
+
+Important information contained in Suricata events can include:
+	*	Timestamp
+	*	Source IP
+	*	Destination IP
+	*	Source port
+	*	Destination port
+	*	Protocol
+  *	Alert signature
+	*	Signature ID
+	*	Severity
+	*	Event type
+
+Investigation Perspective
+
+From a SOC analyst perspective, detecting the scan is only the beginning. If I received an alert such as: TCP SYN Scan Detected ,I would investigate:
+
+1. Source IP
+
+Determine who generated the traffic.
+
+In this lab:
+
+192.168.56.109 was the Kali system.
+
+2. Destination IP
+
+Determine which system was being scanned.
+
+In this lab:
+
+192.168.56.105 was the Ubuntu Server.
+
+3. Destination Ports
+
+Determine which ports were targeted. During testing, Nmap identified services such as: 22/tcp and other scanned ports.
+
+4. Frequency
+
+Determine how many scan attempts occurred. Multiple detection messages were generated during the scan.
+
+5. Context
+
+Determine whether the source system is:
+	*	An authorized security-testing system
+	*	A vulnerability scanner
+	*	An administrator’s system
+	*	An unknown endpoint
+	*	A potentially compromised host
+
+This is important because legitimate vulnerability scanning can look very similar to malicious reconnaissance.
+
+False Positives and True Positives
+
+This project also reinforced the difference between an alert and an incident. For example, if a company security team intentionally performs a vulnerability scan, Suricata may detect it.
+
+That does not automatically mean an attack occurred. A SOC analyst needs to determine:
+
+Alert
+ ↓
+Context
+ ↓
+Investigation
+ ↓
+Legitimate activity OR suspicious activity
+
+This is why analysts should not immediately treat every IDS alert as a confirmed compromise.
+
+ICMP Testing
+
+I also tested network discovery traffic such as ICMP. This helped me understand that Suricata will only generate an alert when traffic matches a configured detection rule.
+
+For example, if there is no ICMP-specific rule configured, an ICMP ping does not necessarily produce the same alert as the custom TCP SYN rule.
+
+This was an important lesson:
+
+	IDS detection depends on the rules and configuration, not simply on the fact that network traffic exists.
+
+Nmap Scan Results
+
+The Nmap testing showed network reconnaissance information such as: 22/tcp open ssh and other scanned ports.
+
+This demonstrated how reconnaissance can reveal information about exposed services. From a defensive perspective, this information is valuable because unnecessary exposed services can increase the attack surface of a system.
+
+Key Technical Lessons
+
+1. Network traffic must be visible to the IDS
+
+Suricata must monitor the correct network interface.
+
+If the traffic travels across: enp0s8 ,then Suricata needs to inspect that interface.
+
+2. Detection rules define what Suricata detects
+
+Suricata does not automatically detect every possible form of suspicious activity. Rules determine what patterns are considered alert-worthy.
+
+3. TCP flags are useful for network detection
+
+The custom rule used: flags S to identify TCP SYN packets.
+
+Understanding TCP flags therefore helps when creating network detection rules.
+
+4. Reconnaissance can be detected before exploitation
+
+An attacker may begin with information gathering before attempting exploitation. Detecting reconnaissance can therefore provide an early security signal.
+
+5. Logs are critical to security monitoring
+
+The EVE JSON log provides structured information that can be used for investigation and further analysis.
+
+6. An alert is not automatically an incident
+
+An IDS alert requires investigation and context.
+
+A SOC analyst needs to determine:
+	*	Who generated it?
+	*	What was targeted?
+	*	When did it happen?
+	*	What ports were involved?
+	*	Was the activity authorized?
+	*	Was there follow-up activity?
+
+Troubleshooting Skills Developed
+
+During the project I developed practical troubleshooting experience with: Suricata YAML configuration
+
+I learned that configuration syntax must be correctly formatted. Network interface selection, I learned how important it is to identify the interface carrying the traffic.
+
+Rule file paths
+
+I learned that Suricata must be able to locate the configured rule file.
+
+Rule loading
+
+I learned that a rule can exist on disk but still fail to produce detections if it is not correctly referenced or loaded.
+
+Duplicate signatures
+
+I encountered signature duplication and learned that custom rules need unique SIDs.
+
+Log verification
+
+I learned to verify whether Suricata was actually producing events rather than assuming the IDS was working.
+
+Important Commands Used
+
+Check network interfaces
+
+ip addr
+
+Useful for identifying available network interfaces and IP addresses.
+
+Test connectivity
+
+ping 192.168.56.105
+
+Used to verify communication between Kali and Ubuntu.
+
+Run an Nmap SYN scan
+
+nmap -sS 192.168.56.105
+
+Used to generate controlled TCP reconnaissance traffic.
+
+Start Suricata
+
+sudo suricata -c /etc/suricata/suricata.yaml -i enp0s8
+
+Used to start Suricata with the configured YAML file and monitoring interface.
+
+View Suricata EVE JSON
+
+sudo cat /var/log/suricata/eve.json
+
+Used to inspect Suricata events.
+
+Monitor events in real time
+
+sudo tail -f /var/log/suricata/eve.json
+
+Useful for watching events as they are generated.
+
+Check the rule file
+
+sudo nano /etc/suricata/rules/suricata.rules
+
+Used to create/edit the custom detection rule.
+
+Check Suricata configuration
+
+sudo nano /etc/suricata/suricata.yaml
+
+Used to configure Suricata.
+
+Custom Detection Rule
+
+The main custom rule developed during the project was:
+
+alert tcp any any -> any any (msg:"TCP SYN Scan Detected"; flags S; sid:1000001;)
+
+The rule was designed to generate an alert when TCP SYN traffic matched the configured conditions.
+
+Evidence Collected
+
+The project produced several useful pieces of evidence for the portfolio:
+
+Evidence 1 — Network configuration
+
+Kali:
+
+192.168.56.109
+
+Ubuntu:
+
+192.168.56.105
+
+Evidence 2 — Nmap reconnaissance
+
+Nmap SYN scan against:
+
+192.168.56.105
+
+Evidence 3 — Suricata alert
+
+Detection messages such as: TCP scan detected
+
+Evidence 4 — Suricata EVE log
+
+/var/log/suricata/eve.json
+
+The log contained generated security events.
+
+Evidence 5 — Detection rule
+
+alert tcp any any -> any any (msg:"TCP SYN Scan Detected"; flags S; sid:1000001;)
+
+These screenshots/evidence demonstrate the complete detection process rather than simply showing that Suricata was installed.
+
+SOC Analyst Workflow Demonstrated
+
+This project represents a simplified version of a real SOC detection workflow:
+
+1. Generate network activity
+          ↓
+2. Network traffic reaches monitored system
+          ↓
+3. Suricata inspects traffic
+          ↓
+4. Detection rule matches traffic
+          ↓
+5. Suricata generates alert
+          ↓
+6. Event is written to log
+          ↓
+7. Analyst investigates source/destination
+          ↓
+8. Analyst determines context
+          ↓
+9. Legitimate activity or suspicious activity
+          ↓
+10. Escalation if required
+
+What I Learned From This Project
+
+This project gave me practical experience with network-based security monitoring.
+
+I learned how to:
+	*	Understand network reconnaissance.
+	*	Understand TCP SYN scanning.
+	*	Use Nmap for controlled security testing.
+	*	Configure Suricata.
+	*	Select the correct network interface.
+	*	Create a custom IDS rule.
+	*	Understand TCP SYN flags.
+	*	Load and troubleshoot Suricata rules.
+	*	Interpret Suricata alerts.
+	*	Locate and inspect EVE JSON logs.
+	*	Identify source and destination IP addresses.
+	*	Understand how port scanning can reveal exposed services.
+	*	Distinguish an alert from a confirmed security incident.
+	*	Consider legitimate activity when investigating alerts.
+	*	Troubleshoot IDS configuration problems.
+	*	Think about network activity from a SOC analyst’s perspective.
+
+Key SOC Takeaways
+
+Detection is only the first step
+
+Generating an alert is not the same as completing an investigation.
+
+Context matters
+
+The same scan can be:
+	*	Authorized security testing
+	*	Vulnerability scanning
+	*	Malicious reconnaissance
+
+The analyst needs additional context.
+
+Network visibility matters
+
+If an IDS cannot see the traffic, it cannot detect it.
+
+Rules matter
+
+The detection capability depends heavily on the configured rules.
+
+Logs matter
+
+The alert needs supporting event data for investigation.
+
+Reconnaissance matters
+
+Port scanning can provide early visibility into activity occurring against a network.
+
+Challenges I Encountered
+
+During the project I encountered several configuration issues.
+
+These included:
+	*	Suricata YAML syntax errors.
+	*	Incorrect interface configuration.
+	*	Rule path problems.
+	*	Rule-file naming issues.
+	*	Duplicate signatures.
+	*	Empty or incorrectly referenced rule files.
+	*	Understanding the correct Suricata configuration structure.
+
+Rather than treating these as failures, I used them to understand how IDS configuration works in a real environment.
+
+This was one of the most useful parts of the project because security analysts frequently need to troubleshoot security tooling before they can investigate alerts.
+
+Skills Demonstrated
+
+Network Security
+	*	Network reconnaissance
+	*	Port scanning
+	*	TCP/IP fundamentals
+	*	TCP flags
+	*	Network traffic analysis
+
+SOC Skills
+	*	Alert monitoring
+	*	Detection analysis
+	*	Event investigation
+	*	Source/destination analysis
+	*	Understanding false positives
+	*	Security event documentation
+
+IDS Skills
+	*	Suricata configuration
+	*	Custom detection rules
+	*	Rule management
+	*	EVE JSON logging
+	*	IDS troubleshooting
+
+Security Tools
+	*	Kali Linux
+	*	Ubuntu Server
+	*	Suricata
+	*	Nmap
+	*	tshark
+
+Project Outcome
+
+The project successfully demonstrated a complete basic network detection workflow.
+
+I generated a controlled TCP SYN scan from Kali Linux against Ubuntu Server and configured Suricata to identify the traffic using a custom detection rule.
+
+Suricata successfully generated detection events, which were recorded in the EVE JSON log.
+
+The project gave me practical experience moving beyond theoretical cybersecurity concepts into:
+
+Generating traffic → detecting activity → reviewing alerts → analyzing logs → thinking like a SOC analyst.
+
+Future Improvements
+
+Possible future improvements to this lab include:
+	* Creating more specific reconnaissance detection rules.
+	*	Detecting ICMP reconnaissance.
+	*	Detecting common port scanning patterns.
+	*	Adding additional network traffic analysis.
+	*	Sending Suricata events into a SIEM.
+	*	Correlating network alerts with endpoint authentication events.
+	*	Creating investigation timelines from multiple security events.
+	*	Building additional SOC detection scenarios.
+
+Final Takeaway
+
+Project 4 helped me understand how network-based detection works from both a technical and SOC analyst perspective.
+
+The most important lesson was that cybersecurity monitoring is not simply about seeing an alert. It involves understanding what generated the alert, what systems were involved, what the activity means, whether it was authorized, and what additional evidence is required to determine the appropriate response.
+
+This project strengthened my foundation in network monitoring, IDS detection, log analysis, reconnaissance detection, and SOC investigation.
